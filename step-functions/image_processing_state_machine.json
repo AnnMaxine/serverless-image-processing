@@ -1,0 +1,39 @@
+
+{
+  "Comment": "Serverless Image Processing Pipeline",
+  "QueryLanguage": "JSONata",
+  "StartAt": "ProcessImage",
+  "States": {
+    "ProcessImage": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Arguments": {
+        "FunctionName": "arn:aws:lambda:us-east-2:557643339253:function:ImageResizerFunction",
+        "Payload": {
+          "source_bucket": "{% $states.input.source_bucket %}",
+          "object_key": "{% $states.input.object_key %}"
+        }
+      },
+      "Output": "{% $states.result.Payload %}",
+      "Next": "CheckResult"
+    },
+    "CheckResult": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Condition": "{% $states.input.status = 'SUCCESS' %}",
+          "Next": "Success"
+        }
+      ],
+      "Default": "Failure"
+    },
+    "Success": {
+      "Type": "Succeed"
+    },
+    "Failure": {
+      "Type": "Fail",
+      "Error": "ImageProcessingFailed",
+      "Cause": "The image could not be processed successfully."
+    }
+  }
+}
